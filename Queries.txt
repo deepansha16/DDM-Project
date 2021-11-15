@@ -1,0 +1,43 @@
+Query for loading the data onto Neo4j, along with examples of useful queries and commands for analysis:
+
+1) Loading the data:
+
+LOAD CSV WITH HEADERS FROM 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTA06l11SWFmcl1Btb4H7BaMjuLeIyCtjg14Mu8FsAiG56uZ1AIWdCsF8VelU07gLOSSpN-VrKKN9Gn/pub?output=csv' AS row
+MERGE (p:Person {PersonId: row.Person_ID, Name: row.Name, Address: row.Address, Age:row.Age, Gender:row.Gender, VaccinationStatus: row.VaccinationStatus, Passport_ID: row.Passport_ID, Case_ID: row.Case_ID, haveInfectionSymptoms: row.haveInfectionSymptoms, haveCovidVirus: row.haveCovidVirus, contactPerson_ID: row.contactPerson_ID, contactDate: row.contactDate, contactPlace: row.contactPlace, device_ID: row.device_ID, GpsCoordinates: row.GpsCoordinates, VisitedPlacesName: row.VisitedPlacesName, DateOfVisit: row.DateOfVisit, isVaccineMandatory: row.isVaccineMandatory, isNegativeTestMandatory: row.isNegativeTestMandatory})
+
+2) Creating a new node:
+
+CREATE (p:Person {PersonId: '', Name: '', Address: '', Age:'', Gender:'', VaccinationStatus: '', Passport_ID: '', Case_ID: '', haveInfectionSymptoms: '', haveCovidVirus: '', contactPerson_ID: '', contactDate: '', contactPlace: '', device_ID: '', GpsCoordinates: '', VisitedPlacesName: '', DateOfVisit: '', isVaccineMandatory: '', isNegativeTestMandatory: ''})
+
+3) Creating relationships based on the ‘contactPerson_ID’:
+
+MATCH
+  (a:Person),
+  (b:Person)
+WHERE a.contactPerson_ID = b.PersonId
+CREATE (a)-[r:ContactWith]->(b)
+RETURN type(r)
+
+4) Query to find people who have been infected to gain information like their address and the locations they visited:
+
+Match (n) where n.haveCovidVirus='yes' return n.Name,n.Address,n.GpsCoordinates,n.DateOfVisit
+
+5) Query to get 1 and 2-step neighbours of infected people:
+
+MATCH (n)-[*1..2]-(m)
+WHERE n.haveCovidVirus = 'yes'
+RETURN m.PersonId,m.Name
+
+6) Query to get a list of people who are showing symptoms but are not fully vaccinated:
+
+Match (n) where n.haveInfectionSymptoms='yes' and n.VaccinationStatus<>'full' return n.PersonId,n.Name
+
+7) Count of the people who have been infected between the first and second dose of the vaccine:
+
+Match (n) where n.haveCovidVirus='yes' and n.VaccinationStatus='partial' return Count(n)
+
+8) List of people who need to quarantine in the country they have travelled to:
+
+Match (n) where n.isVaccineMandatory='yes' and (n.VaccinationStatus='partial' or n.VaccinationStatus='not yet') return n.Passport_ID,n.Name,n.VisitedPlacesName
+
+—————————
